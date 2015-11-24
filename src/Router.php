@@ -93,7 +93,7 @@ class Router
         //find possible matches via segment count
         $uriSegments = array_filter(explode('/', $uri));
 
-        $possibleRoutes = $this->segmentsMap[count($uriSegments)];
+        $possibleRoutes = isset($this->segmentsMap[count($uriSegments)]) ? $this->segmentsMap[count($uriSegments)] ? [];
 
         foreach($possibleRoutes as $route){
 
