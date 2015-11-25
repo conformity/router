@@ -29,34 +29,16 @@ class Route
 
     protected $requiresMatch = false;
 
-    public function __construct($methods, $uri, $callback){
-        $this->methods = (array) $methods;
-        $this->uri = $this->prependSlash($uri);
-        $this->requiresMatch = (strpos($uri, '{') !== false) ? true : false;
-        $this->segments = array_filter(explode('/', $this->uri));
-        $this->callback = $callback;
-    }
-
-    private function prependSlash($uri){
-        if(strpos($uri, '/') !== 0){
-            return '/' . $uri;
-        }
-        return $uri;
+    public function __construct($data){
+        $this->methods = $data['methods'];
+        $this->uri = $data['uri'];
+        $this->requiresMatch = $data['requires_match'];
+        $this->segments = $data['segments'];
+        $this->callback = $data['callback'];
     }
 
     public function requiresMatch(){
         return $this->requiresMatch;
-    }
-
-    public function getPossibleSegmentsCount(){
-        $segmentCount = count($this->segments);
-        $optionals = $segmentCount;
-        foreach($this->segments as $segment){
-            if(strpos($segment, '?') !== false){
-                $optionals--;
-            }
-        }
-        return range($optionals, $segmentCount);
     }
 
     /**

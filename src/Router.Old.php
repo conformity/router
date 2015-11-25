@@ -35,37 +35,26 @@ class Router implements RouterInterface
         return $this;
     }
 
+    private function addRoute($method, $uri, $callback){
+        return new Route($method, $uri, $callback);
+    }
+
     public function match($method, $uri, $callback = null){
 
-        //add slash
         $uri = $this->slashUri($uri);
 
-        //get segments
-        $segments = array_filter(explode('/', $uri));
-
-        //get possible segment count
-        $segmentCount = $this->getPossibleSegments($segments);
-
-        //add to map
-        foreach($segmentCount as $count){
-            $this->segmentsMap[$count][$uri] = $uri;
-        }
-
-        //create route array
-        $route = [
-            'methods' => (array) $method,
-            'uri' => $uri,
-            'callback' => $callback,
-            'segments' => $segments,
-            'requires_match' => (strpos($uri, '{') !== false) ? true : false,
-        ];
+        $route = $this->addRoute($method, $uri, $callback);
 
         //save route against uri (must be an array as you could define same route with different methods
         $this->routes[$uri] = (isset($this->routes[$uri])) ? $this->routes[$uri] : [];
 
         $this->routes[$uri][] = $route;
 
-        return true;
+        foreach($route->getPossibleSegmentsCount() as $count){
+            $this->segmentsMap[$count][$route->getUri()] = $route->getUri();
+        }
+
+        return $route;
     }
 
     public function head($uri, $callback){
@@ -101,14 +90,13 @@ class Router implements RouterInterface
 
             //loop each route for this uri and assign if method matches
             $routes = $this->routes[$uri];
-
             //we need to store methods to send back later
             $methods = [];
             $route = null;
             foreach($routes as $instance){
-                $methods = array_merge($methods, $instance['methods']);
-                if(in_array($method, $instance['methods'])){
-                    $route = new Route($instance);
+                $methods = array_merge($methods, $instance->getMethods());
+                if(in_array($method, $instance->getMethods())){
+                    $route = $instance;
                     break;
                 }
             }
@@ -150,10 +138,8 @@ class Router implements RouterInterface
             //loop each route for this uri and assign if method matches
             $routes = $this->routes[$routeGroup];
 
-            //test the first route in the array, the uris are the same so it either matches or it doesn't
-            $first = new Route($routes[0]);
-
-            if(!$first->matches($uri)){
+            //test the first route in the array, the uris are the same so it either matches or it doesnt
+            if(!$routes[0]->matches($uri)){
                 continue;
             }
 
@@ -164,15 +150,14 @@ class Router implements RouterInterface
             foreach($routes as $_route){
 
                 //save methods as we found a match, but maybe not the right method
-                $methods = array_merge($methods, $_route['methods']);
+                $methods = array_merge($methods, $_route->getMethods());
 
                 //not this route, goto the next one
-                if(!in_array($method, $_route['methods'])){
+                if(!in_array($method, $_route->getMethods())){
                     continue;
                 }
 
-                //great, the uri matches and the method is allowed, lets new up a route object
-                $_route = new Route($_route);
+                //great, the uri matches and the method is allowed
 
                 //add global matchers/modifyers
                 $_route->addModifyers($this->modifyers);
@@ -194,25 +179,8 @@ class Router implements RouterInterface
             return $route;
         }
 
-        //if we get here we haven't found a route :-(
+        //if we get here we havent found a route :-(
         throw new NotFoundException(sprintf('The uri requested: %s cannot be found', $uri));
-    }
-
-    /**
-     * @param $segments
-     * @return array|int
-     */
-    private function getPossibleSegments($segments)
-    {
-        $segmentCount = count($segments);
-        $optionals = $segmentCount;
-        foreach ($segments as $segment) {
-            if (strpos($segment, '?') !== false) {
-                $optionals--;
-            }
-        }
-        $segmentCount = range($optionals, $segmentCount);
-        return $segmentCount;
     }
 
 }
