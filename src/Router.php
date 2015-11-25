@@ -21,6 +21,58 @@ class Router
 
     }
 
+    public static function fromCache($file, callable $definition){
+        if(file_exists($file)){
+            return require $file;
+        }
+        $router = $definition(new self);
+        file_put_contents($file, var_export($router, true));
+        return $router;
+    }
+
+    public static function __set_state($vars){
+        return (new self())->setRoutes($vars['routes'])
+            ->setSegmentsMap($vars['segmentsMap'])
+            ->setMatchers($vars['matchers'])
+            ->setModifyers($vars['modifyers']);
+    }
+
+    /**
+     * @param array $routes
+     */
+    public function setRoutes($routes)
+    {
+        $this->routes = $routes;
+        return $this;
+    }
+
+    /**
+     * @param array $segmentsMap
+     */
+    public function setSegmentsMap($segmentsMap)
+    {
+        $this->segmentsMap = $segmentsMap;
+        return $this;
+    }
+
+    /**
+     * @param array $matchers
+     */
+    public function setMatchers($matchers)
+    {
+        $this->matchers = $matchers;
+        return $this;
+    }
+
+    /**
+     * @param array $modifyers
+     */
+    public function setModifyers($modifyers)
+    {
+        $this->modifyers = $modifyers;
+        return $this;
+    }
+
     public function addMatcher($name, $callback){
         $this->matchers[$name] = $callback;
         return $this;

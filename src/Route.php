@@ -218,4 +218,8 @@ class Route
         return $data['value'];
     }
 
+    public static function __set_state($vars){
+        return (new self($vars['methods'], $vars['uri'], $vars['callback']))->withData($vars['data'])->addMatchers($vars['matchers'])->addModifyers($vars['modifyers']);
+    }
+
 }
