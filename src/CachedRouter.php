@@ -8,9 +8,6 @@
 
 namespace Conformity\Router;
 
-
-use Conformity\Router\Exception\MethodNotAllowedException;
-
 class CachedRouter extends Router implements RouterInterface
 {
 
@@ -43,47 +40,22 @@ class CachedRouter extends Router implements RouterInterface
 
         //found it, lets add it to the map
         if($route instanceof Route && $route->requiresMatch() === true){
-            $this->cacheMap[$uri] = $route->getUri();
+            $this->cacheMap[$uri] = serialize($route);
             $this->changed = true;
-        }
 
-        if($save === true){
-            $this->save();
+            if($save === true){
+                $this->save();
+            }
         }
 
         return $route;
     }
 
     private function dispatchViaCacheMap($method = 'GET', $uri = ''){
-        if(array_key_exists($uri, $this->cacheMap)){
+        if(array_key_exists($method.'|'.$uri, $this->cacheMap)){
 
-            //loop each route for this uri and assign if method matches
-            $routes = $this->routes[$this->cacheMap[$uri]];
+            return unserialize($this->cacheMap[$method.'|'.$uri]);
 
-
-            //we need to store methods to send back later
-            $methods = [];
-            $route = null;
-            foreach($routes as $instance){
-                $methods = array_merge($methods, $instance->getMethods());
-                if(in_array($method, $instance->getMethods())){
-                    $route = $instance;
-                    break;
-                }
-            }
-
-            //the route uri exists but there isn't a route matching this method
-            if(!$route instanceof Route){
-                throw new MethodNotAllowedException($methods, sprintf('The uri requested: %s isn\'t allowed via: %s', $uri, $method));
-            }
-
-            $route->addModifyers($this->modifyers);
-            $route->addMatchers($this->matchers);
-
-            //we have to call this to setup the params
-            if($route->matches($uri)){
-                return $route;
-            }
         }
         return false;
     }
