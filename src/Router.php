@@ -21,6 +21,23 @@ class Router implements RouterInterface
 
     }
 
+    protected function toArray(){
+        return [
+            'routes' => $this->routes,
+            'segments_map' => $this->segmentsMap,
+            'matchers' => $this->matchers,
+            'modifyers' => $this->modifyers
+        ];
+    }
+
+    protected function fromArray($array = []){
+        $this->routes = $array['routes'];
+        $this->segmentsMap = $array['segments_map'];
+        $this->matchers = $array['matchers'];
+        $this->modifyers = $array['modifyers'];
+        return $this;
+    }
+
     private function slashUri($uri){
         return (strpos($uri, '/') !== 0) ? '/' . $uri : $uri;
     }

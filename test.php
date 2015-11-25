@@ -29,3 +29,5 @@ $router->post('/multiple/segments/test/{optional?}', 'is_numeric');
 
 //print_r($router->dispatch('GET', '/gettest'));
 print_r($router->dispatch('GET', '/multiple/segments/test/10/'));
+
+$router->saveCacheFile();
