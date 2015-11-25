@@ -27,18 +27,11 @@ class Route
 
     protected $modifyers = [];
 
-    protected $requiresMatch = false;
-
     public function __construct($data){
         $this->methods = $data['methods'];
         $this->uri = $data['uri'];
-        $this->requiresMatch = $data['requires_match'];
         $this->segments = $data['segments'];
         $this->callback = $data['callback'];
-    }
-
-    public function requiresMatch(){
-        return $this->requiresMatch;
     }
 
     /**

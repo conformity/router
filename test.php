@@ -2,7 +2,7 @@
 
 require __DIR__ . '/vendor/autoload.php';
 
-$router = new \Conformity\Router\CachedRouter(__DIR__ . '/cache');
+$router = new \Conformity\Router\LearnableCachedRouter(new \Conformity\Router\LearnableArrayCache());
 
 $router->addMatcher('numeric', 'is_numeric');
 
@@ -29,5 +29,3 @@ $router->post('/multiple/segments/test/{optional?}', 'is_numeric');
 
 //print_r($router->dispatch('GET', '/gettest'));
 print_r($router->dispatch('GET', '/multiple/segments/test/10/'));
-
-$router->saveCacheFile();
