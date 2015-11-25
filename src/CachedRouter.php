@@ -42,7 +42,7 @@ class CachedRouter extends Router implements RouterInterface
         $route = parent::dispatch($method, $uri);
 
         //found it, lets add it to the map
-        if($route instanceof Route){
+        if($route instanceof Route && $route->requiresMatch() === true){
             $this->cacheMap[$uri] = $route->getUri();
             $this->changed = true;
         }

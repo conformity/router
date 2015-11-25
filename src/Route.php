@@ -27,9 +27,12 @@ class Route
 
     protected $modifyers = [];
 
+    protected $requiresMatch = false;
+
     public function __construct($methods, $uri, $callback){
         $this->methods = (array) $methods;
         $this->uri = $this->prependSlash($uri);
+        $this->requiresMatch = (strpos($uri, '{') !== false) ? true : false;
         $this->segments = array_filter(explode('/', $this->uri));
         $this->callback = $callback;
     }
@@ -39,6 +42,10 @@ class Route
             return '/' . $uri;
         }
         return $uri;
+    }
+
+    public function requiresMatch(){
+        return $this->requiresMatch;
     }
 
     public function getPossibleSegmentsCount(){

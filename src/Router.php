@@ -43,10 +43,11 @@ class Router implements RouterInterface
 
         $this->routes[$route->getUri()][] = $route;
 
-        foreach($route->getPossibleSegmentsCount() as $count){
-            $this->segmentsMap[$count][] = $route->getUri();
-            //it only needs to be there once
-            $this->segmentsMap[$count] = array_filter($this->segmentsMap[$count]);
+        //only do this for one route method as it may already exist.
+        if(!isset($this->segmentsMap[$count][$route->getUri()])){
+            foreach($route->getPossibleSegmentsCount() as $count){
+                $this->segmentsMap[$count][$route->getUri()] = $route->getUri();
+            }
         }
 
         return $route;
