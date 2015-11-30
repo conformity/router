@@ -17,12 +17,19 @@ class Router implements RouterInterface
 
     protected $modifyers = [];
 
+    /**
+     * The route group attribute stack.
+     *
+     * @var array
+     */
+    protected $groupStack = [];
+
     public function __construct(){
 
     }
 
     protected function slashUri($uri){
-        return (strpos($uri, '/') !== 0) ? '/' . $uri : $uri;
+        return (strpos($uri, '/') !== 0 && strpos($uri, 'h') !== 0) ? '/' . $uri : $uri;
     }
 
     public function addMatcher($name, $callback){
@@ -40,29 +47,29 @@ class Router implements RouterInterface
         //add slash
         $uri = $this->slashUri($uri);
 
-        //get segments
-        $segments = array_filter(explode('/', $uri));
-
-        //get possible segment count
-        $segmentCount = $this->getPossibleSegments($segments);
-
-        //add to map
-        foreach($segmentCount as $count){
-            $this->segmentsMap[$count][$uri] = $uri;
-        }
-
         //create route array
         $route = [
             'methods' => (array) $method,
             'uri' => $uri,
-            'callback' => $callback,
-            'segments' => $segments
+            'callback' => $callback
         ];
 
-        //save route against uri (must be an array as you could define same route with different methods
-        $this->routes[$uri] = (isset($this->routes[$uri])) ? $this->routes[$uri] : [];
+        //get segments
+        $segments = array_filter(explode('/', $route['uri']));
+        $route['segments'] = $segments;
 
-        $this->routes[$uri][] = $route;
+        //get possible segment count
+        $segmentCount = $this->getPossibleSegments($route['segments']);
+
+        //add to map
+        foreach($segmentCount as $count){
+            $this->segmentsMap[$count][$route['uri']] = $route['uri'];
+        }
+
+        //save route against uri (must be an array as you could define same route with different methods
+        $this->routes[$route['uri']] = (isset($this->routes[$route['uri']])) ? $this->routes[$route['uri']] : [];
+
+        $this->routes[$route['uri']][] = $route;
 
         return true;
     }
@@ -91,9 +98,14 @@ class Router implements RouterInterface
         return $this->match('DELETE', $uri, $callback);
     }
 
+    public function options($uri, $callback){
+        return $this->match(['OPTIONS'], $uri, $callback);
+    }
+
     public function any($uri, $callback){
         return $this->match(['HEAD', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'], $uri, $callback);
     }
+
 
     private function findExactRoute($method = 'GET', $uri = ''){
         if(array_key_exists($uri, $this->routes)){
@@ -152,6 +164,10 @@ class Router implements RouterInterface
             //test the first route in the array, the uris are the same so it either matches or it doesn't
             $first = new Route($routes[0]);
 
+            //add global matchers/modifyers
+            $first->addModifyers($this->modifyers);
+            $first->addMatchers($this->matchers);
+
             if(!$first->matches($uri)){
                 continue;
             }
@@ -176,6 +192,9 @@ class Router implements RouterInterface
                 //add global matchers/modifyers
                 $_route->addModifyers($this->modifyers);
                 $_route->addMatchers($this->matchers);
+
+                //fill params
+                $_route->matches($uri);
 
                 //set the route variable
                 $route = $_route;
