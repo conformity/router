@@ -115,6 +115,15 @@ class Route
 
         $segments = array_filter(explode('/', $uri));
 
+        /*
+        $parts = array_filter(explode('{', $uri));
+        foreach($parts as &$part){
+            $part = explode('}', $part);
+            $part = array_shift($part);
+        }
+        $segments = $parts;
+        */
+
         foreach($segments as $index => $segment){
 
             //if its parameter(s), validate it and set value
@@ -147,53 +156,65 @@ class Route
 
     private function validateSegment($segmentDefinition, $suppliedSegment){
 
-        //we have multiple parameters within this string, this is a little more difficult!
-        //we need to replace the curly braces with something else so we can still identify them later on, then split the definition into an array
-        $segmentDefinition = str_replace(['{', '}'], ['{**', '**}'], $segmentDefinition);
-        $tempDefinitionParts = array_filter(explode('{', $segmentDefinition));
-        $builtDefinitionParts = [];
-        foreach($tempDefinitionParts as $index => $value){
-            $subParts = array_filter(explode('}', $value));
-            foreach($subParts as $part) {
-                $builtDefinitionParts[] = $part;
-            }
-        }
+        //if we only have 1 parameter - and its the entire segment
+        if(strpos($segmentDefinition, '{') === 0 && strpos($segmentDefinition, '}') === strlen($segmentDefinition) && substr_count($segmentDefinition, '{') < 2) {
 
-        //now we need to split the supplied segment into the same type of array, using the definition array as the template
-        $suppliedParts = [];
-        $suppliedTemp = $suppliedSegment;
-        foreach($builtDefinitionParts as $index => $part){
-            if(strpos($part, '**') !== false){
-                //if its a variable we need to find the next part and chop it off from there, or if its the last part, just use that
-                if(isset($builtDefinitionParts[$index + 1])){
-                    $suppliedTemp = explode($builtDefinitionParts[$index + 1], $suppliedTemp);
-                    $suppliedParts[] = array_shift($suppliedTemp);
-                    $suppliedTemp = $builtDefinitionParts[$index + 1] . implode($builtDefinitionParts[$index + 1], $suppliedTemp);//make sure we put the next part back onto the start of the string to ensure the keys still line up.
+            $param = $this->validateParam(str_replace(['{', '}'], ['**', '**'], $segmentDefinition), $suppliedSegment);
+
+            if(false === $param){
+                return false;
+            }
+
+            return [$param];
+        }else{
+
+            //we have multiple parameters within this string, this is a little more difficult!
+            //we need to replace the curly braces with something else so we can still identify them later on, then split the definition into an array
+            $segmentDefinition = str_replace(['{', '}'], ['{**', '**}'], $segmentDefinition);
+            $tempDefinitionParts = array_filter(explode('{', $segmentDefinition));
+            $builtDefinitionParts = [];
+            foreach($tempDefinitionParts as $index => $value){
+                $subParts = array_filter(explode('}', $value));
+                foreach($subParts as $part) {
+                    $builtDefinitionParts[] = $part;
+                }
+            }
+
+            //now we need to split the supplied segment into the same type of array, using the definition array as the template
+            $suppliedParts = [];
+            $suppliedTemp = $suppliedSegment;
+            foreach($builtDefinitionParts as $index => $part){
+                if(strpos($part, '**') !== false){
+                    //if its a variable we need to find the next part and chop it off from there, or if its the last part, just use that
+                    if(isset($builtDefinitionParts[$index + 1])){
+                        $suppliedTemp = explode($builtDefinitionParts[$index + 1], $suppliedTemp);
+                        $suppliedParts[] = array_shift($suppliedTemp);
+                        $suppliedTemp = $builtDefinitionParts[$index + 1] . implode($builtDefinitionParts[$index + 1], $suppliedTemp);//make sure we put the next part back onto the start of the string to ensure the keys still line up.
+                    }else{
+                        //end of string
+                        $suppliedParts[] = $suppliedTemp;
+                    }
                 }else{
-                    //end of string
-                    $suppliedParts[] = $suppliedTemp;
+                    //its just a standard string, chop it now
+                    $suppliedTemp = explode($part, $suppliedTemp);
+                    array_shift($suppliedTemp);
+                    $suppliedParts[] = $part;
+                    $suppliedTemp = implode($part, $suppliedTemp);
                 }
-            }else{
-                //its just a standard string, chop it now
-                $suppliedTemp = explode($part, $suppliedTemp);
-                array_shift($suppliedTemp);
-                $suppliedParts[] = $part;
-                $suppliedTemp = implode($part, $suppliedTemp);
             }
-        }
 
-        //loop through and assign variables after validation
-        $data = [];
-        foreach($builtDefinitionParts as $index => $part){
-            if(strpos($part, '**') !== false) {
-                $param = $this->validateParam($part, $suppliedParts[$index]);
-                if(!$param){
-                    return false;
+            $data = [];
+            foreach($builtDefinitionParts as $index => $part){
+                if(strpos($part, '**') !== false) {
+                    $param = $this->validateParam($part, $suppliedParts[$index]);
+                    if(!$param){
+                        return false;
+                    }
+                    $data[] = $param;
                 }
-                $data[] = $param;
             }
+            return $data;
         }
-        return $data;
     }
 
     private function validateParam($expected, $supplied){
