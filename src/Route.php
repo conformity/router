@@ -75,6 +75,14 @@ class Route
     }
 
     /**
+     * @param array $params
+     */
+    public function setParams($params)
+    {
+        $this->params = $params;
+    }
+
+    /**
      * @return array
      */
     public function getData()
@@ -114,15 +122,6 @@ class Route
     public function matches($uri){
 
         $segments = array_filter(explode('/', $uri));
-
-        /*
-        $parts = array_filter(explode('{', $uri));
-        foreach($parts as &$part){
-            $part = explode('}', $part);
-            $part = array_shift($part);
-        }
-        $segments = $parts;
-        */
 
         foreach($segments as $index => $segment){
 

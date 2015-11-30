@@ -172,6 +172,9 @@ class Router implements RouterInterface
                 continue;
             }
 
+            //store params so we dont have to parse them more than once
+            $params = $first->getParams();
+
             //we need to store methods to send back later
             $methods = [];
 
@@ -194,7 +197,7 @@ class Router implements RouterInterface
                 $_route->addMatchers($this->matchers);
 
                 //fill params
-                $_route->matches($uri);
+                $_route->setParams($params);
 
                 //set the route variable
                 $route = $_route;
