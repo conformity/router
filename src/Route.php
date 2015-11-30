@@ -32,6 +32,7 @@ class Route
         $this->uri = $data['uri'];
         $this->segments = $data['segments'];
         $this->callback = $data['callback'];
+        $this->data = $data['data'];
     }
 
     /**
@@ -271,6 +272,34 @@ class Route
         }
 
         return $data['value'];
+    }
+
+
+    public function toUrl($params = []){
+        if(!empty($params)){
+            $parts = array_filter(explode('{', $this->uri));
+            foreach($parts as $index => $part){
+                $moreParts = array_filter(explode('}', $part));
+
+                if(strpos($moreParts[0], '|') !== false){
+                    $name = array_filter(explode($moreParts[0], '|'));
+                    $moreParts[0] = array_shift($name);
+                }
+
+                if(strpos($moreParts[0], '?') !== false){
+                    $moreParts[0] = substr($moreParts[0], 0, -1);
+                }
+
+                if(isset($params[$moreParts[0]])){
+                    $moreParts[0] = $params[$moreParts[0]];
+                }
+
+                $parts[$index] = implode($moreParts);
+            }
+            return str_replace('//', '/', implode('', $parts));
+        }else{
+            return $this->uri;
+        }
     }
 
 }

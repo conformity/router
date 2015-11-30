@@ -17,12 +17,7 @@ class Router implements RouterInterface
 
     protected $modifyers = [];
 
-    /**
-     * The route group attribute stack.
-     *
-     * @var array
-     */
-    protected $groupStack = [];
+    protected $names = [];
 
     public function __construct(){
 
@@ -47,11 +42,30 @@ class Router implements RouterInterface
         //add slash
         $uri = $this->slashUri($uri);
 
+        //save extra data
+        if(is_array($callback)){
+            $data = $callback;
+            foreach($callback as $key => $value){
+                if(is_callable($value) && $key == 'callback'){
+                    $callback = $value;
+                    unset($data[$key]);
+                }
+            }
+            if(!isset($data['name'])){
+                $data['name'] = $uri;
+            }
+        }else{
+            $data = [
+                'name' => $uri
+            ];
+        }
+
         //create route array
         $route = [
             'methods' => (array) $method,
             'uri' => $uri,
-            'callback' => $callback
+            'callback' => $callback,
+            'data' => $data
         ];
 
         //get segments
@@ -70,6 +84,8 @@ class Router implements RouterInterface
         $this->routes[$route['uri']] = (isset($this->routes[$route['uri']])) ? $this->routes[$route['uri']] : [];
 
         $this->routes[$route['uri']][] = $route;
+
+        $this->names[$route['data']['name']] = $route['uri'];
 
         return true;
     }
@@ -140,7 +156,19 @@ class Router implements RouterInterface
         return false;
     }
 
-    public function dispatch($method = 'GET', $uri = ''){
+    public function dispatch($method = 'GET', $uri = '', $domain = null){
+
+        if($domain !== null){
+            $uri = rtrim($domain) . $this->slashUri($uri);
+            try{
+                $route = $this->dispatch($method, $uri);
+                if($route instanceof Route){
+                    return $route;
+                }
+            }catch(NotFoundException $e){
+                //supress and try without domain
+            }
+        }
 
         $uri = $this->slashUri($uri);
 
@@ -234,6 +262,18 @@ class Router implements RouterInterface
         }
         $segmentCount = range($optionals, $segmentCount);
         return $segmentCount;
+    }
+
+    public function toUrl($name = '', $params = []){
+
+        if(array_key_exists($name, $this->names) && !empty($this->routes[$this->names[$name]])){
+
+            $route = new Route($this->routes[$this->names[$name]][0]);
+            return $route->toUrl($params);
+
+        }
+
+        throw new NotFoundException(sprintf('The route name requested: %s cannot be found', $name));
     }
 
 }

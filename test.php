@@ -36,11 +36,13 @@ $router->get('/multiple/{inmiddle}/test/{optional}/{segments?}', 'handler');
 $router->get('/a/test/{inmiddle}/optional-{name}.{extension}', 'handler');
 
 
-//print_r($router);
+$router->get('/test/{inmiddle}/optional-{name}.{extension}', ['name' => 'testname', 'callback' => 'handler']);
 
-//exit();
+
 print_r($router->dispatch('GET', '/multiple/segments/test'));
 print_r($router->dispatch('GET', '/multiple/segments/test/var'));
 print_r($router->dispatch('GET', '/a/test/with/optional-lee.json'));
-print_r($router->dispatch('GET', 'http://2.test.com/multiple/segments/test/hey'));
+print_r($router->dispatch('GET', '/multiple/segments/test/hey', 'http://2.test.com'));
 //print_r($router->dispatch('GET', '/multiple/segments/test/10/'));
+
+print_r($router);
